@@ -1,17 +1,22 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { exchangeCode, fetchMe, checkEligibility, voterHash } from "@/lib/intra";
 import { hasVoted } from "@/lib/survey";
-import { setVoter } from "@/lib/session";
+import { getVoter, setVoter } from "@/lib/session";
 
 export async function GET(req: NextRequest) {
   const to = (path: string) => {
     const res = NextResponse.redirect(new URL(path, req.nextUrl.origin));
     res.cookies.delete("oauth_state");
+    res.headers.set("Cache-Control", "no-store");
     return res;
   };
   const code = req.nextUrl.searchParams.get("code");
   const state = req.nextUrl.searchParams.get("state");
-  if (!code || !state || state !== req.cookies.get("oauth_state")?.value) return to("/?e=state");
+  if (!code || !state || state !== req.cookies.get("oauth_state")?.value) {
+    // Browser "back" replays the old ?code=..&state=.. URL after the state cookie is gone.
+    // Someone who is already signed in just continues instead of seeing an error.
+    return to((await getVoter()) ? "/vote" : "/?e=state");
+  }
 
   let me;
   try {
