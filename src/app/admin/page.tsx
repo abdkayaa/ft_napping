@@ -1,6 +1,7 @@
 import { isAdmin } from "@/lib/session";
 import { stats, isOpen } from "@/lib/survey";
 import { collectTexts, latestAnalysis, topWords, type AiTheme } from "@/lib/analysis";
+import { texts as surveyTexts } from "@/lib/texts";
 import { toggleOpen, analyse } from "./actions";
 import { AdminNav, LoginForm, Split, card, pct } from "./ui";
 
@@ -33,7 +34,7 @@ export default async function Admin({ searchParams }: PageProps<"/admin">) {
   const sp = await searchParams;
   if (!(await isAdmin())) return <LoginForm failed={!!sp.e} />;
 
-  const [s, open, texts, ai] = await Promise.all([stats(), isOpen(), collectTexts(), latestAnalysis()]);
+  const [s, open, texts, ai, { q1 }] = await Promise.all([stats(), isOpen(), collectTexts(), latestAnalysis(), surveyTexts("tr")]);
   const allTexts = [
     ...texts.noReasons,
     ...texts.suggestions,
@@ -54,7 +55,7 @@ export default async function Admin({ searchParams }: PageProps<"/admin">) {
           <div className="text-sm text-muted">cevap ({s.voters} oy veren)</div>
         </div>
         <div className="sm:col-span-2">
-          <div className="mb-2 text-sm font-medium">Kurallarla dinlenmeye izin verilsin mi?</div>
+          <div className="mb-2 text-sm font-medium">{q1}</div>
           <Split a={s.yes} b={s.no} la="Evet" lb="Hayır" />
         </div>
         <div className="text-sm text-muted sm:col-span-3">

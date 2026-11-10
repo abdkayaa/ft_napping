@@ -28,7 +28,7 @@ export function Split({ a, b, la, lb }: { a: number; b: number; la: string; lb: 
 const NAV = [
   ["/admin", "Özet"],
   ["/admin/responses", "Cevaplar"],
-  ["/admin/rules", "Kurallar"],
+  ["/admin/rules", "Sorular"],
   ["/admin/report", "Rapor"],
 ] as const;
 

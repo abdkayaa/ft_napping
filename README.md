@@ -42,7 +42,7 @@ npm run dev                  # http://localhost:3000
 
 ## Kontrol
 ```bash
-npm test          # 27 test: tek oy, anonimlik şeması, uygunluk, CSV
+npm test          # 31 test: tek oy, anonimlik şeması, uygunluk, CSV, soru düzenleme
 npm run typecheck
 npm run build
 ```
@@ -54,5 +54,7 @@ npm run build
 4. 16/11/2026'dan sonra yeni secret'ı `FT_CLIENT_SECRET_NEXT`'e yaz.
 
 ## Admin
-`/admin` — özet, kural bazında destek, cevaplar, kelime sıklığı, AI tema analizi, kural yönetimi,
+`/admin` — özet, kural bazında destek, cevaplar, kelime sıklığı, AI tema analizi, soru yönetimi
+(`/admin/rules`: madde ekle / düzenle / sil / sırala, ana soru ve diğer metinleri TR+EN değiştir, açık uçlu soruları gizle;
+oy almış madde ve cevap gelmiş ana soru kilitlenir),
 yazdırılabilir rapor (`/admin/report`), anonim CSV (`/api/admin/export`).

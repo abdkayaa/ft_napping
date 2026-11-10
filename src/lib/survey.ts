@@ -197,3 +197,35 @@ export async function ruleHasVotes(id: number) {
   const d = await db();
   return (await d.query("select 1 from rule_votes where rule_id=$1 limit 1", [id])).length > 0;
 }
+
+export async function hasResponses() {
+  const d = await db();
+  return (await d.query("select 1 from responses limit 1")).length > 0;
+}
+
+const RENUMBER = `update rules r set position = x.n
+  from (select id, row_number() over (order by position, id)::int n from rules) x where r.id = x.id`;
+
+/** Removes a rule that nobody has voted on (a voted rule can only be deactivated). Positions are closed up. */
+export async function deleteRule(id: number): Promise<"ok" | "voted"> {
+  const d = await db();
+  return d.tx(async (q) => {
+    if ((await q.query("select 1 from rule_votes where rule_id=$1 limit 1", [id])).length) return "voted";
+    await q.query("delete from rules where id=$1", [id]);
+    await q.query(RENUMBER);
+    return "ok";
+  });
+}
+
+/** Moves a rule one step up (-1) or down (+1). K numbers follow the position, votes follow the rule id. */
+export async function moveRule(id: number, dir: -1 | 1) {
+  const d = await db();
+  await d.tx(async (q) => {
+    const ids = (await q.query<{ id: number }>("select id from rules order by position, id")).map((r) => r.id);
+    const i = ids.indexOf(id);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= ids.length) return;
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+    for (const [n, rid] of ids.entries()) await q.query("update rules set position=$2 where id=$1", [rid, n + 1]);
+  });
+}

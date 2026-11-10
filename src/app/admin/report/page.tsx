@@ -2,6 +2,7 @@ import { isAdmin } from "@/lib/session";
 import { stats } from "@/lib/survey";
 import { collectTexts, latestAnalysis, topWords, type AiTheme } from "@/lib/analysis";
 import campus from "@/data/campus.json";
+import { texts as surveyTexts } from "@/lib/texts";
 import { AdminNav, LoginForm, Split, pct } from "../ui";
 import { PrintButton } from "../print-button";
 
@@ -29,7 +30,7 @@ function ThemeTable({ title, items }: { title: string; items?: AiTheme[] }) {
 
 export default async function Report() {
   if (!(await isAdmin())) return <LoginForm failed={false} />;
-  const [s, texts, ai] = await Promise.all([stats(), collectTexts(), latestAnalysis()]);
+  const [s, texts, ai, { q1 }] = await Promise.all([stats(), collectTexts(), latestAnalysis(), surveyTexts("tr")]);
   const today = new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" });
   const words = topWords(texts.noReasons, 10);
   const active = s.rules.filter((r) => r.active);
@@ -51,8 +52,8 @@ export default async function Report() {
       <section>
         <h2 className="text-lg font-semibold">1. Özet</h2>
         <p>
-          Aktif 42 Istanbul öğrencilerinden <b>{s.total}</b> kişi katıldı. Aşağıdaki kurallarla dinlenmeye izin verilmesini{" "}
-          <b>%{pct(s.yes, s.total)}</b> ({s.yes}) destekledi, <b>%{pct(s.no, s.total)}</b> ({s.no}) desteklemedi.
+          Aktif 42 Istanbul öğrencilerinden <b>{s.total}</b> kişi katıldı. “{q1}” sorusuna{" "}
+          <b>%{pct(s.yes, s.total)}</b> ({s.yes}) evet, <b>%{pct(s.no, s.total)}</b> ({s.no}) hayır dedi.
         </p>
         <div className="mt-2 max-w-xl">
           <Split a={s.yes} b={s.no} la="Evet" lb="Hayır" />

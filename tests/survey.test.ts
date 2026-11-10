@@ -1,9 +1,15 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { db, resetDbForTests } from "@/lib/db";
 import { voterHash } from "@/lib/intra";
+import { dict } from "@/lib/i18n";
+import { seed } from "@/lib/schema";
+import { getOverrides, saveOverrides, texts } from "@/lib/texts";
 import {
+  deleteRule,
   getRules,
+  hasResponses,
   hasVoted,
+  moveRule,
   parseForm,
   responses,
   ruleHasVotes,
@@ -175,5 +181,60 @@ describe("stats per rule", () => {
     const k1 = s.rules.find((r) => r.id === rules[0].id)!;
     expect([k1.agree, k1.disagree, k1.agreeYes, k1.nYes, k1.agreeNo, k1.nNo]).toEqual([2, 1, 2, 2, 0, 1]);
     expect(await ruleHasVotes(rules[0].id)).toBe(true);
+  });
+});
+
+describe("editing the questions", () => {
+  it("deletes an unvoted rule and closes the numbering; a voted rule stays", async () => {
+    await fresh();
+    const before = await getRules(true);
+    expect(await deleteRule(before[1].id)).toBe("ok");
+    const after = await getRules(true);
+    expect(after.map((r) => r.id)).toEqual(before.filter((_, i) => i !== 1).map((r) => r.id));
+    expect(after.map((r) => r.position)).toEqual(after.map((_, i) => i + 1));
+
+    await submit(voterHash(1), await sub("yes"));
+    expect(await deleteRule(after[0].id)).toBe("voted");
+    expect((await getRules(true)).length).toBe(after.length);
+  });
+
+  it("moves a rule up and down, ignoring moves past the ends", async () => {
+    await fresh();
+    const ids = (await getRules(true)).map((r) => r.id);
+    await moveRule(ids[0], 1);
+    expect((await getRules(true)).map((r) => r.id).slice(0, 2)).toEqual([ids[1], ids[0]]);
+    await moveRule(ids[0], -1);
+    await moveRule(ids[0], -1);
+    const back = await getRules(true);
+    expect(back.map((r) => r.id)).toEqual(ids);
+    expect(back.map((r) => r.position)).toEqual(ids.map((_, i) => i + 1));
+  });
+
+  it("default rules are seeded once: deleting all of them does not bring them back", async () => {
+    const d = await fresh();
+    for (const r of await getRules(true)) await deleteRule(r.id);
+    await seed(d);
+    expect(await getRules(true)).toEqual([]);
+    // a survey with no rules still takes a vote
+    expect(await submit(voterHash(2), await sub("no"))).toBe("ok");
+    expect(await hasResponses()).toBe(true);
+  });
+
+  it("text overrides apply per language, empty or default values fall back, hidden parts are tracked", async () => {
+    await fresh();
+    expect((await texts("tr")).q1).toBe(dict.tr.q1);
+    await saveOverrides({
+      tr: { q1: "  Yeni soru?  ", intro: "", reason: dict.tr.reason, bogus: "x" },
+      en: { q1: "New question?" },
+      hidden: ["comment", "nope"],
+    });
+    const tr = await texts("tr");
+    expect(tr.q1).toBe("Yeni soru?");
+    expect(tr.intro).toBe(dict.tr.intro);
+    expect((await texts("en")).q1).toBe("New question?");
+    expect([...tr.hidden]).toEqual(["comment"]);
+    expect(await getOverrides()).toEqual({ tr: { q1: "Yeni soru?" }, en: { q1: "New question?" }, hidden: ["comment"] });
+    await saveOverrides({});
+    expect((await texts("tr")).q1).toBe(dict.tr.q1);
   });
 });

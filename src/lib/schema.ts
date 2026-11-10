@@ -93,11 +93,16 @@ export const DEFAULT_RULES: [string, string][] = [
 ];
 
 export async function seed(d: Db) {
-  const [{ n }] = await d.query<{ n: number }>("select count(*)::int as n from rules");
-  if (n === 0) {
-    for (const [i, [tr, en]] of DEFAULT_RULES.entries()) {
-      await d.query("insert into rules(position, text_tr, text_en) values ($1,$2,$3)", [i + 1, tr, en]);
+  // Default rules are inserted exactly once: an admin who deletes every rule must not get them back.
+  const seeded = (await d.query("select 1 from settings where key='rules_seeded'")).length > 0;
+  if (!seeded) {
+    const [{ n }] = await d.query<{ n: number }>("select count(*)::int as n from rules");
+    if (n === 0) {
+      for (const [i, [tr, en]] of DEFAULT_RULES.entries()) {
+        await d.query("insert into rules(position, text_tr, text_en) values ($1,$2,$3)", [i + 1, tr, en]);
+      }
     }
+    await d.query(`insert into settings(key, value) values ('rules_seeded', 'true'::jsonb) on conflict (key) do nothing`);
   }
   await d.query(
     `insert into settings(key, value) values ('survey_open', 'true'::jsonb) on conflict (key) do nothing`,

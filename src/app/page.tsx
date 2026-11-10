@@ -1,11 +1,11 @@
-import { getLang, t } from "@/lib/i18n";
+import { getLang } from "@/lib/i18n";
+import { texts } from "@/lib/texts";
 import { getRules, isOpen } from "@/lib/survey";
 
 export default async function Home({ searchParams }: PageProps<"/">) {
   const lang = await getLang();
-  const d = t(lang);
   const { e } = await searchParams;
-  const [rules, open] = await Promise.all([getRules(), isOpen()]);
+  const [d, rules, open] = await Promise.all([texts(lang), getRules(), isOpen()]);
   const err = typeof e === "string" ? d.err[e] : undefined;
 
   return (
@@ -22,6 +22,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         </p>
       )}
 
+      {rules.length > 0 && (
       <section className="rounded-xl border border-line bg-card p-5">
         <h2 className="mb-3 font-semibold">{d.rulesTitle}</h2>
         <ol className="space-y-2">
@@ -33,16 +34,19 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           ))}
         </ol>
       </section>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <section className="rounded-xl border border-line p-4">
           <h2 className="mb-1 text-sm font-semibold">{d.anonTitle}</h2>
           <p className="text-sm leading-relaxed text-muted">{d.anon}</p>
         </section>
-        <section className="rounded-xl border border-line p-4">
-          <h2 className="mb-1 text-sm font-semibold">{d.dataTitle}</h2>
-          <p className="text-sm leading-relaxed text-muted">{d.data}</p>
-        </section>
+        {!d.hidden.has("data") && (
+          <section className="rounded-xl border border-line p-4">
+            <h2 className="mb-1 text-sm font-semibold">{d.dataTitle}</h2>
+            <p className="text-sm leading-relaxed text-muted">{d.data}</p>
+          </section>
+        )}
       </div>
 
       {open ? (

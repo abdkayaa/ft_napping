@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getVoter } from "@/lib/session";
-import { getLang, t } from "@/lib/i18n";
+import { getLang } from "@/lib/i18n";
+import { texts } from "@/lib/texts";
 import { getRules, hasVoted, isOpen } from "@/lib/survey";
 import { submitVote } from "./actions";
 
@@ -23,8 +24,8 @@ export default async function Vote({ searchParams }: PageProps<"/vote">) {
   if (await hasVoted(v.vh)) redirect("/thanks?already=1");
   if (!(await isOpen())) redirect("/?e=closed");
   const lang = await getLang();
-  const d = t(lang);
-  const rules = await getRules();
+  const [d, rules] = await Promise.all([texts(lang), getRules()]);
+  const openText = !d.hidden.has("suggestion") || !d.hidden.has("comment");
   const { e } = await searchParams;
 
   return (
@@ -35,6 +36,7 @@ export default async function Vote({ searchParams }: PageProps<"/vote">) {
         </p>
       )}
 
+      {rules.length > 0 && (
       <fieldset className="space-y-4">
         <legend className="mb-3 text-xl font-semibold text-balance">{d.rulesTitle}</legend>
         {rules.map((r, i) => (
@@ -54,6 +56,7 @@ export default async function Vote({ searchParams }: PageProps<"/vote">) {
           </div>
         ))}
       </fieldset>
+      )}
 
       <fieldset className="space-y-3 rounded-xl border-2 border-accent bg-card p-5">
         <legend className="px-1 text-lg font-semibold text-balance">{d.q1}</legend>
@@ -61,23 +64,31 @@ export default async function Vote({ searchParams }: PageProps<"/vote">) {
           <Choice name="answer" value="yes" label={d.yes} tone="yes" />
           <Choice name="answer" value="no" label={d.no} tone="no" />
         </div>
-        <label className="block space-y-1">
-          <span className="text-sm">{d.reason}</span>
-          <textarea name="reason" maxLength={1500} rows={3} className={field} />
-        </label>
+        {!d.hidden.has("reason") && (
+          <label className="block space-y-1">
+            <span className="text-sm">{d.reason}</span>
+            <textarea name="reason" maxLength={1500} rows={3} className={field} />
+          </label>
+        )}
       </fieldset>
 
-      <div className="space-y-4">
-        <p className="text-sm text-muted">{d.optionalHint}</p>
-        <label className="block space-y-1">
-          <span className="text-sm">{d.suggestion}</span>
-          <textarea name="suggestion" maxLength={1500} rows={3} className={field} />
-        </label>
-        <label className="block space-y-1">
-          <span className="text-sm">{d.comment}</span>
-          <textarea name="comment" maxLength={1500} rows={3} className={field} />
-        </label>
-      </div>
+      {openText && (
+        <div className="space-y-4">
+          <p className="text-sm text-muted">{d.optionalHint}</p>
+          {!d.hidden.has("suggestion") && (
+            <label className="block space-y-1">
+              <span className="text-sm">{d.suggestion}</span>
+              <textarea name="suggestion" maxLength={1500} rows={3} className={field} />
+            </label>
+          )}
+          {!d.hidden.has("comment") && (
+            <label className="block space-y-1">
+              <span className="text-sm">{d.comment}</span>
+              <textarea name="comment" maxLength={1500} rows={3} className={field} />
+            </label>
+          )}
+        </div>
+      )}
 
       <label className="flex items-start gap-3 text-sm">
         <input type="checkbox" name="final" required className="mt-0.5" />
