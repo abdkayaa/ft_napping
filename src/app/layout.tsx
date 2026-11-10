@@ -6,7 +6,7 @@ import "./globals.css";
 
 // Public source, so anyone can check what is stored. The footer also names the exact commit
 // this deployment was built from (Vercel sets VERCEL_GIT_COMMIT_SHA for git deployments).
-const SOURCE_URL = process.env.SOURCE_URL ?? "https://github.com/abdkayaa/42-uyku-anketi";
+const SOURCE_URL = process.env.SOURCE_URL ?? "https://github.com/abdkayaa/ft_napping";
 const COMMIT = process.env.VERCEL_GIT_COMMIT_SHA;
 
 const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin", "latin-ext"] });
