@@ -41,6 +41,21 @@ create table if not exists analysis (
   n_texts int not null,
   content jsonb not null
 );
+-- Supabase exposes the public schema over its REST API to anyone holding the publishable key
+-- (roles anon / authenticated). Lock every table: RLS on with no policies, and no grants.
+-- The app connects as the table owner, which RLS does not restrict.
+alter table voters enable row level security;
+alter table rules enable row level security;
+alter table responses enable row level security;
+alter table rule_votes enable row level security;
+alter table settings enable row level security;
+alter table analysis enable row level security;
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'anon') then
+    revoke all on voters, rules, responses, rule_votes, settings, analysis from anon, authenticated;
+    revoke all on sequence rules_id_seq, analysis_id_seq from anon, authenticated;
+  end if;
+end $$;
 `;
 
 // Draft rules derived from campus seat data (analysis/, 26 Oct – 9 Nov 2026, 330 seats, 243 users):

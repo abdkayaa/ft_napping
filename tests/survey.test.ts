@@ -82,6 +82,15 @@ describe("anonymity", () => {
     expect(await cols("rule_votes")).toEqual(["response_id", "rule_id", "agree", "comment"]);
   });
 
+  it("every table has row level security on (Supabase REST cannot read it)", async () => {
+    const d = await db();
+    const rows = await d.query<{ relname: string; relrowsecurity: boolean }>(
+      "select relname, relrowsecurity from pg_class where relkind='r' and relnamespace='public'::regnamespace order by relname",
+    );
+    expect(rows.map((r) => r.relname)).toEqual(["analysis", "responses", "rule_votes", "rules", "settings", "voters"]);
+    expect(rows.every((r) => r.relrowsecurity)).toBe(true);
+  });
+
   it("stored voter hash is not the raw id and depends on VOTER_SALT", async () => {
     await submit(voterHash(424242), await sub("yes"));
     const d = await db();

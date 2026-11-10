@@ -23,6 +23,7 @@ Bu repo, yayındaki sitenin kaynağıdır; sitenin altındaki linkte deploy edil
 - `voters` ile `responses` arasında ortak anahtar yok.
 - Postgres her satıra transaction no (`xmin`) ve fiziksel konum (`ctid`) yazar. Bu yüzden her oyda `voters` tablosunun tamamı rastgele sırayla yeniden yazılır. Sonuçta tüm voter satırları aynı `xmin`'e sahip olur, sıraları karışır; test: “xmin / ctid cannot tie…”.
 - Admin paneli ve CSV hash, tarih ve sıra göstermez; metinler rastgele sıralanır.
+- Supabase, `public` şemasını publishable key ile REST üzerinden açar. Tüm tablolarda RLS açık ve `anon`/`authenticated` rollerinin hiçbir yetkisi yok (`src/lib/schema.ts`); yani anahtarı bilen biri bile tabloları okuyamaz. Test: “every table has row level security on”.
 
 **Kalan riskler (dürüst liste):**
 - Hem `VOTER_SALT`'a hem DB'ye erişimi olan kişi, bir intra id'nin oy verip vermediğini görebilir, ama *ne* oy verdiğini göremez. Tek oy kuralı bu kontrolü gerektiriyor.
@@ -41,7 +42,7 @@ npm run dev                  # http://localhost:3000
 
 ## Kontrol
 ```bash
-npm test          # 26 test: tek oy, anonimlik şeması, uygunluk, CSV
+npm test          # 27 test: tek oy, anonimlik şeması, uygunluk, CSV
 npm run typecheck
 npm run build
 ```
